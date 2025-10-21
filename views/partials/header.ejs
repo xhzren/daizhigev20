@@ -1,9 +1,18 @@
-<header>
-  <div class="container">
-    <h1><a href="/" style="color:#fff;text-decoration:none;">殆知阁古代文献在线检阅</a></h1>
-    <nav>
+<header class="site-header">
+  <div class="container header-inner">
+    <h1 class="site-title"><a href="/">殆知阁古代文献在线检阅</a></h1>
+    <nav class="site-nav">
       <a href="/">首页</a>
-      <span title="功能开发中">检索（即将推出）</span>
+      <div class="dropdown">
+        <button class="dropbtn">分类</button>
+        <div class="dropdown-content">
+          <% (CATEGORIES || []).forEach(function(cat){ %>
+            <a href="/category/<%= encodeURIComponent(cat) %>"><%= cat %></a>
+          <% }) %>
+        </div>
+      </div>
+      <a href="/about">使用须知</a>
+      <a href="https://github.com/garychowcmu/daizhigev20/find/master" target="_blank" rel="noopener">Find file</a>
     </nav>
   </div>
 </header>
