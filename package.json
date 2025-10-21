@@ -1,0 +1,25 @@
+{
+  "name": "daizhige-ancient-texts-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "殆知阁古代文献在线检阅 - 基于 Node.js 的浏览与检索基础框架",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon --watch src --ext js,ejs,css --exec \"node src/server.js\""
+  },
+  "engines": {
+    "node": ">=16"
+  },
+  "dependencies": {
+    "compression": "^1.7.4",
+    "ejs": "^3.1.9",
+    "express": "^4.19.2",
+    "express-ejs-layouts": "^2.5.1",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}

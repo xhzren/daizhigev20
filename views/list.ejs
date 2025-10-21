@@ -1,0 +1,49 @@
+<div class="breadcrumbs">
+  <% breadcrumbs.forEach(function(c, idx) { %>
+    <% if (idx) { %> &raquo; <% } %>
+    <a href="<%= c.href %>"><%= c.label %></a>
+  <% }); %>
+</div>
+
+<div class="card">
+  <h2>
+    <%= category %>
+    <% if (relPath) { %>
+      / <%= relPath %>
+    <% } %>
+  </h2>
+
+  <% if (entries.dirs.length) { %>
+    <h3>子目录</h3>
+    <ul class="list">
+      <% entries.dirs.forEach(function(d) { %>
+        <li>
+          <div>
+            <% const next = relPath ? (relPath + '/' + d.name) : d.name; %>
+            <a href="/category/<%= encodeURIComponent(category) %>/dir/<%= encodeURIComponent(next) %>">📁 <%= d.name %></a>
+          </div>
+          <div><span class="badge">目录</span></div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+
+  <% if (entries.files.length) { %>
+    <h3>文献</h3>
+    <ul class="list">
+      <% entries.files.forEach(function(f) { %>
+        <li>
+          <div>
+            <% const p = relPath ? (relPath + '/' + f.name) : f.name; %>
+            <a href="/file/<%= encodeURIComponent(category) %>/<%= encodeURIComponent(p) %>">📄 <%= f.name %></a>
+          </div>
+          <div><span class="badge"><%= (f.size/1024).toFixed(1) %> KB</span></div>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+
+  <% if (!entries.dirs.length && !entries.files.length) { %>
+    <p>这里暂时没有可展示内容。</p>
+  <% } %>
+</div>
