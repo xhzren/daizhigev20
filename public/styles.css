@@ -84,7 +84,8 @@ body {
   .reader-layout { grid-template-columns: minmax(0, 1fr) 260px; align-items: start; }
 }
 .reader-section {}
-.reader-title h2 { margin: 0 0 8px 0; font-size: 20px; }
+.reader-title { flex: 1 1 auto; min-width: 0; }
+.reader-title h2 { margin: 0 0 8px 0; font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .reader-controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
 .reader-controls .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
 .control-group { display: flex; align-items: center; gap: 8px; }
@@ -124,10 +125,10 @@ footer.container .card { background: var(--card-bg); }
 /* Reader Pager */
 .reader-card { padding: 0; }
 .reader-pager { position: relative; }
-.pager-viewport { position: relative; overflow: hidden; height: min(72vh, 70rem); }
+.pager-viewport { position: relative; overflow: hidden; height: min(75vh, 70rem); }
 .pager-track { display: flex; height: 100%; transform: translateX(0); transition: transform 300ms ease; will-change: transform; }
 .reader-page { flex: 0 0 100%; height: 100%; overflow: hidden; }
-.reader-page .page-inner { max-width: 820px; margin: 0 auto; height: 100%; overflow: hidden; padding: 12px 8px; }
+.reader-page .page-inner { max-width: 820px; margin: 0 auto; height: 100%; overflow: hidden; padding: 12px 8px 32px; }
 
 /* Mode tweaks */
 .reader-pager.mode-slide .pager-track { transition: transform 300ms ease; }
@@ -156,4 +157,11 @@ footer.container .card { background: var(--card-bg); }
 @media (max-width: 1023px) {
   .reader-layout .toc { position: fixed; top: 64px; right: 16px; bottom: 16px; left: auto; width: min(80vw, 320px); max-height: none; transform: translateX(120%); transition: transform .25s ease; z-index: 100; }
   body.toc-open .reader-layout .toc { transform: translateX(0); }
+}
+
+/* Mobile adaptations for reader controls */
+@media (max-width: 640px) {
+  .reader-controls { flex-direction: column; align-items: stretch; gap: 8px; }
+  .reader-controls .controls { justify-content: flex-start; gap: 8px 10px; }
+  .reader-title h2 { font-size: 18px; }
 }
