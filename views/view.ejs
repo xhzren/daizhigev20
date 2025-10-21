@@ -9,7 +9,7 @@
   <section class="reader-section">
     <div class="card reader-controls">
       <div class="reader-title">
-        <h2><%= fileName %></h2>
+        <h2><%= fileName %> <% if (optimized) { %><span class="badge">优化版</span><% } %></h2>
       </div>
       <div class="controls">
         <div class="control-group">
@@ -44,7 +44,7 @@
     <% if ((tocItems || []).length) { %>
       <ol class="toc-list">
         <% tocItems.forEach(function(t) { %>
-          <li><a href="#<%= t.id %>"><%= t.title %></a></li>
+          <li class="level-<%= t.level || 2 %>"><a href="#<%= t.id %>"><%= t.title %></a></li>
         <% }) %>
       </ol>
     <% } else { %>

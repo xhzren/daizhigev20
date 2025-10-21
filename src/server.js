@@ -77,6 +77,17 @@ function listDirectory(absDir) {
   }
 }
 
+function getOptimizedVersionPath(absFilePath) {
+  const dir = path.dirname(absFilePath);
+  const base = path.basename(absFilePath, path.extname(absFilePath));
+  const candidate = path.join(dir, '示例', base, `${base}_mark.txt`);
+  try {
+    return fs.existsSync(candidate) ? candidate : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 function breadcrumb(category, relPath) {
   const crumbs = [{ label: '首页', href: '/' }];
   if (category) {
@@ -113,7 +124,61 @@ function buildContentAndToc(text) {
     /(第[一二三四五六七八九十百千〇零两0-9]+[回卷章节篇])/,
     /(卷[一二三四五六七八九十百千〇零两0-9]+)/
   ];
+  const hasMarkers = lines.some((l) => l.includes('<<DG_'));
   let idx = 0;
+
+  function pushHeading(tag, display, titleForToc, level) {
+    const id = 'toc-' + (++idx);
+    toc.push({ id, title: titleForToc || display, level });
+    out.push(`<${tag} id="${id}" class="chapter-heading level-${level}">${escapeHtml(display)}</${tag}>`);
+  }
+
+  if (hasMarkers) {
+    let pending = null; // { type: 'book' | 'volume' | 'chapter', title?: string }
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+
+      if (/^<<DG_[A-Z_]+/.test(trimmed)) {
+        const m = trimmed.match(/^<<DG_([A-Z_]+)(.*?)>>$/);
+        const type = m ? m[1] : null;
+        const attrsStr = m ? (m[2] || '') : '';
+        const titleMatch = attrsStr.match(/title="([^"]*)"/);
+        const titleAttr = titleMatch ? titleMatch[1] : '';
+        if (type === 'BOOK') {
+          pending = { type: 'book', title: titleAttr };
+        } else if (type === 'VOLUME_START') {
+          pending = { type: 'volume', title: titleAttr };
+        } else if (type === 'CHAPTER') {
+          pending = { type: 'chapter', title: titleAttr };
+        } else if (type === 'CHAPTER_END' || type === 'VOLUME_END') {
+          // do nothing on end markers for now
+        }
+        continue; // skip marker line output
+      }
+
+      if (pending && trimmed !== '') {
+        if (pending.type === 'book') {
+          pushHeading('h1', trimmed, pending.title || trimmed, 0);
+        } else if (pending.type === 'volume') {
+          pushHeading('h2', trimmed, pending.title || trimmed, 1);
+        } else if (pending.type === 'chapter') {
+          pushHeading('h3', trimmed, pending.title || trimmed, 2);
+        }
+        pending = null;
+        continue; // consume this line as heading content
+      }
+
+      if (trimmed === '') {
+        out.push('<p class="gap"></p>');
+      } else {
+        out.push(`<p>${escapeHtml(line)}</p>`);
+      }
+    }
+    return { html: out.join('\n'), toc };
+  }
+
+  // Fallback heuristic for files without markers
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const trimmed = line.trim();
@@ -128,7 +193,7 @@ function buildContentAndToc(text) {
     }
     if (isHeading) {
       const id = 'toc-' + (++idx);
-      toc.push({ id, title: titlePart });
+      toc.push({ id, title: titlePart, level: 2 });
       out.push(`<h3 id="${id}" class="chapter-heading">${escaped}</h3>`);
     } else if (trimmed === '') {
       out.push('<p class="gap"></p>');
@@ -213,9 +278,13 @@ app.get('/file/:category/:relPath(*)', (req, res, next) => {
   if (!isSafeSubPath(base, abs) || !fs.existsSync(abs) || !fs.statSync(abs).isFile()) {
     return next();
   }
+
+  const optPath = getOptimizedVersionPath(abs);
+  const usedPath = optPath || abs;
+
   let content;
   try {
-    content = fs.readFileSync(abs, { encoding: 'utf8' });
+    content = fs.readFileSync(usedPath, { encoding: 'utf8' });
   } catch (e) {
     return next(e);
   }
@@ -228,7 +297,8 @@ app.get('/file/:category/:relPath(*)', (req, res, next) => {
     breadcrumbs: breadcrumb(category, path.dirname(relPath) === '.' ? '' : path.dirname(relPath)),
     fileName,
     contentHtml: built.html,
-    tocItems: built.toc
+    tocItems: built.toc,
+    optimized: Boolean(optPath)
   });
 });
 
