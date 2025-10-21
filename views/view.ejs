@@ -5,7 +5,50 @@
   <% }); %>
 </div>
 
-<div class="card">
-  <h2><%= fileName %></h2>
-  <pre><%= content %></pre>
+<div class="reader-layout">
+  <section class="reader-section">
+    <div class="card reader-controls">
+      <div class="reader-title">
+        <h2><%= fileName %></h2>
+      </div>
+      <div class="controls">
+        <div class="control-group">
+          <span>字号</span>
+          <button class="btn" id="btn-font-dec" title="减小">A-</button>
+          <button class="btn" id="btn-font-reset" title="重置">默认</button>
+          <button class="btn" id="btn-font-inc" title="增大">A+</button>
+        </div>
+        <div class="control-group">
+          <span>字体</span>
+          <button class="btn" id="btn-font-serif" title="衬线字体">衬线</button>
+          <button class="btn" id="btn-font-sans" title="无衬线">无衬线</button>
+        </div>
+        <div class="control-group">
+          <span>主题</span>
+          <button class="btn" id="btn-theme-light" title="明亮模式">明</button>
+          <button class="btn" id="btn-theme-sepia" title="护眼模式">护眼</button>
+          <button class="btn" id="btn-theme-dark" title="暗色模式">暗</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <article class="reader-content">
+        <%- contentHtml %>
+      </article>
+    </div>
+  </section>
+
+  <aside class="toc card">
+    <h3>目录</h3>
+    <% if ((tocItems || []).length) { %>
+      <ol class="toc-list">
+        <% tocItems.forEach(function(t) { %>
+          <li><a href="#<%= t.id %>"><%= t.title %></a></li>
+        <% }) %>
+      </ol>
+    <% } else { %>
+      <p class="muted">未自动识别章节</p>
+    <% } %>
+  </aside>
 </div>

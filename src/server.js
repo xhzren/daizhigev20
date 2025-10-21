@@ -35,6 +35,10 @@ app.set('layout', 'layout');
 app.use(helmet());
 app.use(compression());
 app.use(morgan('dev'));
+app.use((req, res, next) => {
+  res.locals.CATEGORIES = VALID_CATEGORIES;
+  next();
+});
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 function isSafeSubPath(base, target) {
@@ -90,6 +94,65 @@ function breadcrumb(category, relPath) {
     }
   }
   return crumbs;
+}
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildContentAndToc(text) {
+  const lines = text.split(/\r?\n/);
+  const toc = [];
+  const out = [];
+  const headingRegexes = [
+    /(第[一二三四五六七八九十百千〇零两0-9]+[回卷章节篇])/,
+    /(卷[一二三四五六七八九十百千〇零两0-9]+)/
+  ];
+  let idx = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    const escaped = escapeHtml(line);
+    let isHeading = false;
+    let titlePart = '';
+    if (trimmed.length && trimmed.length <= 40) {
+      for (const r of headingRegexes) {
+        const m = trimmed.match(r);
+        if (m) { isHeading = true; titlePart = trimmed; break; }
+      }
+    }
+    if (isHeading) {
+      const id = 'toc-' + (++idx);
+      toc.push({ id, title: titlePart });
+      out.push(`<h3 id="${id}" class="chapter-heading">${escaped}</h3>`);
+    } else if (trimmed === '') {
+      out.push('<p class="gap"></p>');
+    } else {
+      out.push(`<p>${escaped}</p>`);
+    }
+  }
+  return { html: out.join('\n'), toc };
+}
+
+function markdownToHtml(md) {
+  const lines = md.split(/\r?\n/);
+  const out = [];
+  for (const line of lines) {
+    if (/^######\s+/.test(line)) out.push('<h6>' + escapeHtml(line.replace(/^######\s+/, '')) + '</h6>');
+    else if (/^#####\s+/.test(line)) out.push('<h5>' + escapeHtml(line.replace(/^#####\s+/, '')) + '</h5>');
+    else if (/^####\s+/.test(line)) out.push('<h4>' + escapeHtml(line.replace(/^####\s+/, '')) + '</h4>');
+    else if (/^###\s+/.test(line)) out.push('<h3>' + escapeHtml(line.replace(/^###\s+/, '')) + '</h3>');
+    else if (/^##\s+/.test(line)) out.push('<h2>' + escapeHtml(line.replace(/^##\s+/, '')) + '</h2>');
+    else if (/^#\s+/.test(line)) out.push('<h1>' + escapeHtml(line.replace(/^#\s+/, '')) + '</h1>');
+    else if (line.trim() === '') out.push('<p class="gap"></p>');
+    else out.push('<p>' + escapeHtml(line) + '</p>');
+  }
+  return out.join('\n');
 }
 
 app.get('/', (req, res) => {
@@ -156,14 +219,28 @@ app.get('/file/:category/:relPath(*)', (req, res, next) => {
   } catch (e) {
     return next(e);
   }
+  const built = buildContentAndToc(content);
+  const fileName = path.basename(abs);
   res.render('view', {
-    title: `${path.basename(abs)} - 殆知阁古代文献在线检阅` ,
+    title: `${fileName} - 殆知阁古代文献在线检阅` ,
     category,
     relPath,
     breadcrumbs: breadcrumb(category, path.dirname(relPath) === '.' ? '' : path.dirname(relPath)),
-    fileName: path.basename(abs),
-    content
+    fileName,
+    contentHtml: built.html,
+    tocItems: built.toc
   });
+});
+
+app.get('/about', (req, res) => {
+  let md = '';
+  try {
+    md = fs.readFileSync(path.join(PROJECT_ROOT, '使用须知.md'), { encoding: 'utf8' });
+  } catch (e) {
+    md = '# 使用须知\n暂不可用';
+  }
+  const html = markdownToHtml(md);
+  res.render('about', { title: '使用须知 - 殆知阁古代文献在线检阅', contentHtml: html });
 });
 
 app.use((req, res) => {
