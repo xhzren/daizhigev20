@@ -1,0 +1,11 @@
+<div class="breadcrumbs">
+  <% breadcrumbs.forEach(function(c, idx) { %>
+    <% if (idx) { %> &raquo; <% } %>
+    <a href="<%= c.href %>"><%= c.label %></a>
+  <% }); %>
+</div>
+
+<div class="card">
+  <h2><%= fileName %></h2>
+  <pre><%= content %></pre>
+</div>

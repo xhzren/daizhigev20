@@ -1,0 +1,16 @@
+<div class="card">
+  <h2>分类目录</h2>
+  <ul class="list">
+    <% categories.forEach(c => { %>
+      <li>
+        <div>
+          <a href="/category/<%= encodeURIComponent(c.name) %>"><%= c.name %></a>
+        </div>
+        <div>
+          <span class="badge">子目录 <%= c.countDirs %></span>
+          <span class="badge">文献 <%= c.countFiles %></span>
+        </div>
+      </li>
+    <% }) %>
+  </ul>
+</div>
