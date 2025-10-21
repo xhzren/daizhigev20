@@ -24,11 +24,13 @@
     state.fontSize = Math.max(14, Math.min(24, px));
     localStorage.setItem('dg_font_size', String(state.fontSize));
     applyPreferences();
+    if (pager) pager.repaginate();
   }
   function setReadingFont(kind) {
     state.readingFont = kind;
     localStorage.setItem('dg_reading_font', kind);
     applyPreferences();
+    if (pager) pager.repaginate();
   }
   function setPagingMode(mode) {
     state.pagingMode = mode;
@@ -96,6 +98,62 @@
       this.idToPage = {};
     }
 
+    // Try to split a long block node (e.g., <p>) to fit the remaining height.
+    // Returns { fit: Element|null, rest: Element|null }
+    _splitBlockToFit(node, inner, maxHeight) {
+      const tag = (node.tagName || '').toLowerCase();
+      const isHeading = /^h[1-6]$/.test(tag);
+      const isGap = tag === 'p' && node.classList && node.classList.contains('gap');
+      // Do not split headings or gap lines
+      if (isHeading || isGap) return { fit: null, rest: null };
+      // Only handle simple text paragraphs
+      if (tag !== 'p') return { fit: null, rest: null };
+      const text = node.textContent || '';
+      if (text.length <= 1) return { fit: null, rest: null };
+
+      // Binary search the max number of chars that fit
+      let lo = 0;
+      let hi = text.length;
+      let best = 0;
+      // Create a temporary measurement element
+      const testEl = document.createElement(tag);
+      for (const attr of node.attributes) {
+        if (attr && attr.name !== 'id') testEl.setAttribute(attr.name, attr.value);
+      }
+      // Keep in normal flow for accurate height calculation, but invisible
+      testEl.style.visibility = 'hidden';
+
+      const canFit = (count) => {
+        testEl.textContent = text.slice(0, count);
+        inner.appendChild(testEl);
+        const ok = inner.scrollHeight <= maxHeight;
+        inner.removeChild(testEl);
+        return ok;
+      };
+
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (canFit(mid)) { best = mid; lo = mid + 1; }
+        else { hi = mid - 1; }
+      }
+
+      if (best <= 0 || best >= text.length) return { fit: null, rest: null };
+
+      const fitEl = document.createElement(tag);
+      for (const attr of node.attributes) {
+        if (attr && attr.name !== 'id') fitEl.setAttribute(attr.name, attr.value);
+      }
+      fitEl.textContent = text.slice(0, best);
+
+      const restEl = document.createElement(tag);
+      for (const attr of node.attributes) {
+        if (attr && attr.name !== 'id') restEl.setAttribute(attr.name, attr.value);
+      }
+      restEl.textContent = text.slice(best);
+
+      return { fit: fitEl, rest: restEl };
+    }
+
     paginate() {
       if (!this.viewport || !this.track || !this.source) return;
       this.clear();
@@ -116,13 +174,28 @@
 
       let { page, inner } = newPage();
       for (let i = 0; i < nodes.length; i++) {
-        const node = nodes[i];
+        let node = nodes[i];
         inner.appendChild(node);
         if (inner.scrollHeight > viewportH) {
+          // Too tall after adding this node
           inner.removeChild(node);
-          // if nothing fits, force append to avoid infinite loop
+
+          // Try to split long paragraphs smartly
+          const split = this._splitBlockToFit(node, inner, viewportH);
+          if (split.fit) {
+            inner.appendChild(split.fit);
+            // Start a new page, push the remainder to process next
+            ({ page, inner } = newPage());
+            if (split.rest) {
+              nodes.splice(i + 1, 0, split.rest);
+            }
+            continue;
+          }
+
+          // if nothing fits on this page, force append and move on to next page
           if (inner.childNodes.length === 0) {
             inner.appendChild(node);
+            ({ page, inner } = newPage());
           } else {
             ({ page, inner } = newPage());
             inner.appendChild(node);
