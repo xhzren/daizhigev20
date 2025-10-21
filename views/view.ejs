@@ -29,11 +29,31 @@
           <button class="btn" id="btn-theme-sepia" title="护眼模式">护眼</button>
           <button class="btn" id="btn-theme-dark" title="暗色模式">暗</button>
         </div>
+        <div class="control-group">
+          <span>翻页</span>
+          <button class="btn" id="btn-mode-slide" title="滑动翻页">滑动</button>
+          <button class="btn" id="btn-mode-sim" title="仿真翻页">仿真</button>
+          <button class="btn" id="btn-mode-tap" title="点击翻页">点击</button>
+        </div>
+        <div class="control-group">
+          <button class="btn" id="btn-toc-toggle" title="展开/收起目录">目录</button>
+        </div>
       </div>
     </div>
 
-    <div class="card">
-      <article class="reader-content">
+    <div class="card reader-card">
+      <div id="dg-pager" class="reader-pager mode-slide">
+        <div class="pager-viewport">
+          <div class="pager-track"></div>
+          <div class="tap-zones">
+            <div class="zone zone-left" data-dir="prev"></div>
+            <div class="zone zone-center"></div>
+            <div class="zone zone-right" data-dir="next"></div>
+          </div>
+          <div class="page-indicator"><span id="page-current">1</span>/<span id="page-total">1</span></div>
+        </div>
+      </div>
+      <article id="reader-source" class="reader-content" style="display:none;">
         <%- contentHtml %>
       </article>
     </div>
